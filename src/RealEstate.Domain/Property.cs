@@ -11,6 +11,13 @@ public abstract class Property
 
     protected Property(string address, decimal price)
     {
+        // Цей блок виправляє помилку в тестах (FAIL)
+        if (string.IsNullOrWhiteSpace(address)) 
+            throw new ArgumentException("Адреса не може бути порожньою");
+            
+        if (price <= 0) 
+            throw new ArgumentException("Ціна має бути більшою за нуль");
+
         Address = address;
         Price = price;
     }
@@ -21,14 +28,22 @@ public abstract class Property
 public class Apartment : Property
 {
     public int Floor { get; }
-    public Apartment(string addr, decimal p, int floor) : base(addr, p) => Floor = floor;
+    public Apartment(string addr, decimal p, int floor) : base(addr, p) 
+    {
+        Floor = floor;
+    }
+    
     public override decimal CalculateCommission() => Price * 0.05m;
 }
 
 public class House : Property
 {
     public double YardSize { get; }
-    public House(string addr, decimal p, double yard) : base(addr, p) => YardSize = yard;
+    public House(string addr, decimal p, double yard) : base(addr, p) 
+    {
+        YardSize = yard;
+    }
+    
     public override decimal CalculateCommission() => Price * 0.08m;
 }
 
