@@ -1,21 +1,22 @@
 using System;
-using System.Collections.Generic;
 
 namespace RealEstate.Domain;
 
-// Власні винятки для контролю якості (Fault Handling)
-public class DomainException : Exception { public DomainException(string m) : base(m) {} }
-public class InvalidPriceException : DomainException { public InvalidPriceException() : base("Ціна має бути > 0") {} }
-public class InvalidAddressException : DomainException { public InvalidAddressException() : base("Адреса не може бути порожньою") {} }
-public class AlreadySoldException : DomainException { public AlreadySoldException() : base("Операція неможлива: об'єкт уже продано") {} }
-
-public enum PropertyStatus { Available, Sold }
-
+/// <summary>
+/// Базовий клас для всіх об'єктів нерухомості.
+/// </summary>
 public abstract class Property
 {
+    /// <summary> Унікальний ідентифікатор. </summary>
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string Address { get; set; }
+    
+    /// <summary> Повна адреса об'єкта. </summary>
+    public string Address { get; set; } = string.Empty;
+    
+    /// <summary> Вартість об'єкта в гривнях. </summary>
     public decimal Price { get; set; }
+    
+    /// <summary> Поточний статус (Доступно/Продано). </summary>
     public PropertyStatus Status { get; set; } = PropertyStatus.Available;
 
     protected Property() { }
@@ -28,6 +29,10 @@ public abstract class Property
         Price = price;
     }
 
+    /// <summary>
+    /// Переводить об'єкт у статус "Продано".
+    /// </summary>
+    /// <exception cref="AlreadySoldException">Виникає, якщо об'єкт уже проданий.</exception>
     public void MarkAsSold()
     {
         if (Status == PropertyStatus.Sold) throw new AlreadySoldException();
@@ -35,16 +40,12 @@ public abstract class Property
     }
 }
 
+/// <summary>
+/// Представляє житлову квартиру.
+/// </summary>
 public class Apartment : Property
 {
     public int Floor { get; set; }
     public Apartment() { }
     public Apartment(string a, decimal p, int f) : base(a, p) => Floor = f;
-}
-
-public interface IPropertyRepository
-{
-    Task<List<Property>> GetAllAsync();
-    Task AddAsync(Property property);
-    Task UpdateAsync(Property property);
 }
