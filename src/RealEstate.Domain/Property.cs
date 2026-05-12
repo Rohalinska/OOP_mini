@@ -1,23 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace RealEstate.Domain;
 
+// Власні винятки для контролю якості (Fault Handling)
+public class DomainException : Exception { public DomainException(string m) : base(m) {} }
+public class InvalidPriceException : DomainException { public InvalidPriceException() : base("Ціна має бути > 0") {} }
+public class InvalidAddressException : DomainException { public InvalidAddressException() : base("Адреса не може бути порожньою") {} }
+public class AlreadySoldException : DomainException { public AlreadySoldException() : base("Операція неможлива: об'єкт уже продано") {} }
+
 public enum PropertyStatus { Available, Sold }
-
-// Патерн Strategy
-public interface ICommissionStrategy 
-{ 
-    string Name { get; }
-    decimal Calculate(decimal price); 
-}
-
-public class StandardCommission : ICommissionStrategy 
-{ 
-    public string Name => "Стандарт (5%)";
-    public decimal Calculate(decimal price) => price * 0.05m; 
-}
 
 public abstract class Property
 {
@@ -26,18 +18,19 @@ public abstract class Property
     public decimal Price { get; set; }
     public PropertyStatus Status { get; set; } = PropertyStatus.Available;
 
-    protected Property() { } // Для JSON
+    protected Property() { }
 
     protected Property(string address, decimal price)
     {
-        if (price <= 0) throw new ArgumentException("Ціна має бути > 0");
+        if (string.IsNullOrWhiteSpace(address)) throw new InvalidAddressException();
+        if (price <= 0) throw new InvalidPriceException();
         Address = address;
         Price = price;
     }
 
-    public void MarkAsSold() 
+    public void MarkAsSold()
     {
-        if (Status == PropertyStatus.Sold) throw new InvalidOperationException("Вже продано!");
+        if (Status == PropertyStatus.Sold) throw new AlreadySoldException();
         Status = PropertyStatus.Sold;
     }
 }
@@ -49,16 +42,9 @@ public class Apartment : Property
     public Apartment(string a, decimal p, int f) : base(a, p) => Floor = f;
 }
 
-public class House : Property
-{
-    public double YardSize { get; set; }
-    public House() { }
-    public House(string a, decimal p, double y) : base(a, p) => YardSize = y;
-}
-
 public interface IPropertyRepository
 {
     Task<List<Property>> GetAllAsync();
     Task AddAsync(Property property);
-    Task SaveAsync();
+    Task UpdateAsync(Property property);
 }
